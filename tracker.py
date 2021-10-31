@@ -1,23 +1,29 @@
 import cv2
+import pyautogui
 import numpy as np
 import mediapipe as mp
+from screeninfo import get_monitors
+
+pyautogui.PAUSE = 0
 
 mp_utils = mp.solutions.drawing_utils
 mp_styles = mp.solutions.drawing_styles
 mp_hands = mp.solutions.hands
 
+monitor = get_monitors()[0]
+size = np.array([monitor.width, monitor.height])
+
 cv2.namedWindow('image')
 
 cap = cv2.VideoCapture(1)
 
-def detect_motion(ps):
-    p_max, p_min = ps.max(0), ps.min(0)
-    ps = (ps - p_min) / (p_max - p_min)
-    dist = ((ps[4] - ps[8])**2).sum()
-    print(dist < 0.2)
+def to_monitor(ps, idx):
+    pos = ps[idx, :2] * size
+    pos[0] = size[0] - pos[0]
+    return pos
 
 with mp_hands.Hands(
-    model_complexity=1,
+    model_complexity=0,
     min_detection_confidence=0.5,
     min_tracking_confidence=0.5) as hands:
 
@@ -34,7 +40,19 @@ with mp_hands.Hands(
                 ps = [(p.x, p.y, p.z) for p in cur_landmark.landmark]
                 ps = np.array(ps)
 
-                detect_motion(ps)
+                # normalize tracker points
+                p_max, p_min = ps.max(0), ps.min(0)
+                ps_norm = (ps - p_min) / (p_max - p_min)
+
+                # measure target finger distance
+                dist = ((ps_norm[4] - ps_norm[8])**2).sum()
+
+                x, y = to_monitor(ps, 8)
+                pyautogui.moveTo(x, y)
+
+
+                # if dist < 0.2:
+                #     print()
 
                 mp_utils.draw_landmarks(
                     img,
