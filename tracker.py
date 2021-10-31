@@ -2,7 +2,6 @@ import cv2
 import pyautogui
 import numpy as np
 import mediapipe as mp
-from screeninfo import get_monitors
 
 pyautogui.PAUSE = 0
 
@@ -10,8 +9,7 @@ mp_utils = mp.solutions.drawing_utils
 mp_styles = mp.solutions.drawing_styles
 mp_hands = mp.solutions.hands
 
-monitor = get_monitors()[0]
-size = np.array([monitor.width, monitor.height])
+size = np.array(pyautogui.size())
 
 cv2.namedWindow('image')
 
@@ -48,11 +46,12 @@ with mp_hands.Hands(
                 dist = ((ps_norm[4] - ps_norm[8])**2).sum()
 
                 x, y = to_monitor(ps, 8)
+
                 pyautogui.moveTo(x, y)
 
 
-                # if dist < 0.2:
-                #     print()
+                if dist < 0.2:
+                    pyautogui.click()
 
                 mp_utils.draw_landmarks(
                     img,
